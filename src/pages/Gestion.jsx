@@ -41,7 +41,11 @@ export default function Gestion() {
             cargarProductos(); 
         } catch (error) {
             console.error("Error guardando producto", error);
-            alert("Hubo un error al guardar el producto.");
+            if (error.response && error.response.status === 400) {
+                alert("Error: Ya existe un producto con ese SKU. Por favor, elige un SKU único.");
+            } else {
+                alert("Hubo un error al guardar el producto.");
+            }
         }
     };
 

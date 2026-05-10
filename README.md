@@ -1,16 +1,92 @@
-# React + Vite
+# SmartLogix Frontend (Tienda Online)
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Descripción
+El **Frontend de SmartLogix** es una aplicación web React que proporciona la interfaz de usuario para la tienda online. Permite a los usuarios:
 
-Currently, two official plugins are available:
+- Navegar y buscar productos
+- Agregar productos al carrito de compras
+- Gestionar cantidades y validar stock en tiempo real
+- Procesar pedidos
+- Ver boletas de compra
+- Gestionar pedidos existentes (para administradores)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+## Tecnologías Utilizadas
+- **React 19.2.5** con hooks y componentes funcionales
+- **Vite 8.0.10** como bundler y dev server
+- **React Router** para navegación SPA
+- **Axios** para llamadas HTTP al BFF
+- **Bootstrap 5** para estilos CSS
+- **ESLint** para linting de código
 
-## React Compiler
+## Cómo Ejecutar
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### Prerrequisitos
+- Node.js instalado (versión 18+ recomendada)
+- npm o yarn instalado
+- Todos los microservicios backend ejecutándose
 
-## Expanding the ESLint configuration
+### Pasos para Ejecutar
+1. Navega al directorio del proyecto:
+   ```bash
+   cd Smartlogix_Frontend
+   ```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+2. Instala las dependencias:
+   ```bash
+   npm install
+   ```
+
+3. Ejecuta la aplicación en modo desarrollo:
+   ```bash
+   npm run dev
+   ```
+
+4. La aplicación estará disponible en: `http://localhost:5173`
+
+### Build para Producción
+```bash
+npm run build
+```
+
+## Estructura del Proyecto
+```
+src/
+├── components/     # Componentes reutilizables (Navbar)
+├── pages/          # Páginas principales
+│   ├── Catalogo.jsx     # Tienda y carrito
+│   ├── GestionPedidos.jsx # Gestión de pedidos
+│   ├── Boleta.jsx       # Vista de boleta
+│   └── Gestion.jsx      # Gestión de productos
+├── services/       # Servicios API
+│   └── api.js      # Configuración Axios y endpoints
+├── assets/         # Recursos estáticos
+└── main.jsx        # Punto de entrada
+```
+
+## Funcionalidades Principales
+### Tienda (Catálogo)
+- Visualización de productos con stock disponible
+- Selector de cantidad con validación de stock
+- Carrito de compras con totales en tiempo real
+- Validación de stock antes de agregar al carrito
+
+### Gestión de Pedidos
+- Lista de pedidos con totales calculados
+- Edición de pedidos existentes
+- Ajuste de stock automático al modificar pedidos
+- Estados de pedido (Aprobado, Rechazado, etc.)
+
+### Boleta de Compra
+- Vista detallada de pedidos completados
+- Cálculo automático de totales
+- Información enriquecida de productos
+
+## Configuración
+- **Base URL del BFF**: `http://localhost:8088/api/bff`
+- **Dependencias Backend**:
+  - BFF ejecutándose en puerto 8088
+  - MS-Inventario en 8085
+  - MS-Pedidos en 8086
+
+## Arquitectura
+Aplicación SPA (Single Page Application) que consume APIs REST a través del BFF. Utiliza React Hooks para gestión de estado y efectos secundarios. Implementa validaciones del lado cliente para mejorar la experiencia de usuario.

@@ -20,7 +20,17 @@ export default function GestionPedidos() {
     };
 
     const iniciarEdicion = (pedido) => {
-        setEditando({ ...pedido });
+        setEditando({ ...pedido, cliente: pedido.cliente || 'Cliente Web', items: pedido.items || [] });
+    };
+
+    const manejarCantidadItem = (index, nuevaCantidad) => {
+        const itemsActualizados = editando.items.map((item, idx) => idx === index ? { ...item, cantidad: nuevaCantidad } : item);
+        setEditando({ ...editando, items: itemsActualizados });
+    };
+
+    const manejarEliminarItem = (index) => {
+        const itemsActualizados = editando.items.filter((_, idx) => idx !== index);
+        setEditando({ ...editando, items: itemsActualizados });
     };
 
     const guardarCambios = async () => {
@@ -51,16 +61,8 @@ export default function GestionPedidos() {
                         {pedidos.map(p => (
                             <tr key={p.id}>
                                 <td>{p.id}</td>
-                                <td>
-                                    {editando?.id === p.id ? (
-                                        <input 
-                                            className="form-control form-control-sm"
-                                            value={editando.cliente}
-                                            onChange={(e) => setEditando({...editando, cliente: e.target.value})}
-                                        />
-                                    ) : p.cliente}
-                                </td>
-                                <td>${p.totalPedido || p.total}</td>
+                                <td>{p.cliente || 'Cliente Web'}</td>
+                                <td>${p.totalPedido || p.total || (p.items ? p.items.reduce((sum, item) => sum + ((item.precioUnitario || 0) * item.cantidad), 0) : 0)}</td>
                                 <td>
                                     {editando?.id === p.id ? (
                                         <>
@@ -79,6 +81,50 @@ export default function GestionPedidos() {
                     </tbody>
                 </table>
             </div>
+
+            {editando && (
+                <div className="card shadow-sm border-info mt-4">
+                    <div className="card-header bg-info text-white">
+                        <h5 className="mb-0">Editar pedido #{editando.id}</h5>
+                    </div>
+                    <div className="card-body">
+                        <div className="mb-3">
+                            <label className="form-label">Cliente</label>
+                            <input
+                                className="form-control"
+                                value={editando.cliente || ''}
+                                onChange={(e) => setEditando({...editando, cliente: e.target.value})}
+                            />
+                        </div>
+                        <div className="mb-3">
+                            <h6>Productos del pedido</h6>
+                            {editando.items?.length > 0 ? (
+                                editando.items.map((item, index) => (
+                                    <div key={index} className="d-flex align-items-center mb-2">
+                                        <div className="flex-grow-1">
+                                            <strong>{item.skuProducto}</strong>
+                                            <div className="text-muted">Cantidad: </div>
+                                        </div>
+                                        <input
+                                            type="number"
+                                            className="form-control me-2"
+                                            style={{ width: '100px' }}
+                                            min="1"
+                                            value={item.cantidad}
+                                            onChange={(e) => manejarCantidadItem(index, Number(e.target.value))}
+                                        />
+                                        <button className="btn btn-sm btn-outline-danger" onClick={() => manejarEliminarItem(index)}>
+                                            Eliminar
+                                        </button>
+                                    </div>
+                                ))
+                            ) : (
+                                <p className="text-muted">No hay productos asociados a este pedido.</p>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

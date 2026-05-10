@@ -5,6 +5,7 @@ import { getProductos, crearPedido } from '../services/api';
 export default function Catalogo() {
     const [productos, setProductos] = useState([]);
     const [carrito, setCarrito] = useState([]);
+    const [cantidades, setCantidades] = useState({});
     const navigate = useNavigate();
 
     useEffect(() => {
@@ -20,21 +21,33 @@ export default function Catalogo() {
         }
     };
 
-    const agregarAlCarrito = (producto) => {
+    const agregarAlCarrito = (producto, cantidad = 1) => {
+        if (cantidad <= 0) {
+            alert("La cantidad debe ser mayor a 0");
+            return;
+        }
         const itemExistente = carrito.find(item => item.productoId === producto.id);
+        const cantidadEnCarrito = itemExistente ? itemExistente.cantidad : 0;
+        const nuevaCantidadTotal = cantidadEnCarrito + cantidad;
+
+        if (nuevaCantidadTotal > producto.stock) {
+            alert(`No hay suficiente stock. Disponible: ${producto.stock}, en carrito: ${cantidadEnCarrito}`);
+            return;
+        }
         
         if (itemExistente) {
             setCarrito(carrito.map(item => 
                 item.productoId === producto.id 
-                    ? { ...item, cantidad: item.cantidad + 1 } 
+                    ? { ...item, cantidad: item.cantidad + cantidad } 
                     : item
             ));
         } else {
             setCarrito([...carrito, { 
                 productoId: producto.id, 
+                sku: producto.sku,
                 nombre: producto.nombre, 
                 precioUnitario: producto.precio, 
-                cantidad: 1 
+                cantidad: cantidad 
             }]);
         }
     };
@@ -50,15 +63,16 @@ export default function Catalogo() {
 
         const nuevoPedido = {
             cliente: "Cliente Web",
-            detalles: carrito.map(item => ({
-                productoId: item.productoId,
-                cantidad: item.cantidad,
-                precioUnitario: item.precioUnitario
+            items: carrito.map(item => ({
+                skuProducto: item.sku,
+                cantidad: item.cantidad
             }))
         };
 
         try {
             const pedidoCreado = await crearPedido(nuevoPedido);
+            await cargarProductos();
+            setCarrito([]);
             navigate(`/boleta/${pedidoCreado.id}`);
         } catch (error) {
             console.error("Error procesando la compra", error);
@@ -88,9 +102,46 @@ export default function Catalogo() {
                                             <p className="text-muted small mb-2">SKU: {prod.sku}</p>
                                             <p className="card-text flex-grow-1">{prod.descripcion}</p>
                                             
+                                            <div className="d-flex align-items-center mt-2">
+                                                <button 
+                                                    className="btn btn-sm btn-outline-secondary" 
+                                                    onClick={() => setCantidades({...cantidades, [prod.id]: (cantidades[prod.id] || 1) - 1})} 
+                                                    disabled={(cantidades[prod.id] || 1) <= 0}
+                                                >
+                                                    -
+                                                </button>
+                                                <input 
+                                                    type="number" 
+                                                    className="form-control form-control-sm mx-2" 
+                                                    style={{width: '60px'}} 
+                                                    value={cantidades[prod.id] || 1} 
+                                                    onChange={(e) => {
+                                                        const value = e.target.value;
+                                                        setCantidades({...cantidades, [prod.id]: value});
+                                                    }}
+                                                    onBlur={(e) => {
+                                                        const value = Number(e.target.value);
+                                                        if (isNaN(value) || value < 0) {
+                                                            setCantidades({...cantidades, [prod.id]: 0});
+                                                        } else if (value > prod.stock) {
+                                                            setCantidades({...cantidades, [prod.id]: prod.stock});
+                                                        } else {
+                                                            setCantidades({...cantidades, [prod.id]: value});
+                                                        }
+                                                    }}
+                                                />
+                                                <button 
+                                                    className="btn btn-sm btn-outline-secondary" 
+                                                    onClick={() => setCantidades({...cantidades, [prod.id]: (cantidades[prod.id] || 1) + 1})} 
+                                                    disabled={(cantidades[prod.id] || 1) >= prod.stock}
+                                                >
+                                                    +
+                                                </button>
+                                            </div>
+                                            
                                             <button 
                                                 className="btn btn-outline-primary mt-auto"
-                                                onClick={() => agregarAlCarrito(prod)}
+                                                onClick={() => agregarAlCarrito(prod, cantidades[prod.id] || 1)}
                                                 disabled={prod.stock <= 0}
                                             >
                                                 {prod.stock > 0 ? 'Añadir al Carrito' : 'Agotado'}
