@@ -20,6 +20,9 @@ export default function Boleta() {
 
     if (!boleta) return <div className="container mt-5 text-center"><h5>Generando boleta...</h5></div>;
 
+    const clienteMostrar = boleta.cliente || 'Cliente Web';
+    const idPedidoMostrar = boleta.idPedido || boleta.id;
+
     return (
         <div className="container mt-5">
             <div className="card shadow border-0 mx-auto" style={{ maxWidth: '600px' }}>
@@ -27,24 +30,24 @@ export default function Boleta() {
                     <h3 className="mb-0">¡Compra Exitosa! 🎉</h3>
                 </div>
                 <div className="card-body p-4">
-                    <h5 className="text-muted mb-4">Pedido #{boleta.id}</h5>
-                    <p><strong>Cliente:</strong> {boleta.cliente}</p>
+                    <h5 className="text-muted mb-4">Pedido #{idPedidoMostrar}</h5>
+                    <p><strong>Cliente:</strong> {clienteMostrar}</p>
                     
                     <ul className="list-group mb-4">
                         {boleta.detalles?.map((detalle, index) => (
                             <li key={index} className="list-group-item d-flex justify-content-between align-items-center">
                                 <div>
-                                    <h6 className="mb-0">{detalle.productoNombre || `Producto ID: ${detalle.productoId}`}</h6>
+                                    <h6 className="mb-0">{detalle.producto || `Producto SKU: ${detalle.skuProducto || 'desconocido'}`}</h6>
                                     <small className="text-muted">Cantidad: {detalle.cantidad}</small>
                                 </div>
-                                <span className="fw-bold">${detalle.precioUnitario || detalle.precio}</span>
+                                <span className="fw-bold">${detalle.precioUnitario || detalle.precio || 0}</span>
                             </li>
                         ))}
                     </ul>
                     
                     <div className="d-flex justify-content-between border-top pt-3">
                         <h4 className="fw-bold">Total Pagado:</h4>
-                        <h4 className="fw-bold text-success">${boleta.totalPedido || boleta.total}</h4>
+                        <h4 className="fw-bold text-success">${boleta.totalPedido || boleta.total || 0}</h4>
                     </div>
                 </div>
                 <div className="card-footer bg-light text-center py-3">
