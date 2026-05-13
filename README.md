@@ -41,7 +41,7 @@ El **Frontend de SmartLogix** es una aplicación web React que proporciona la in
    npm run dev
    ```
 
-4. La aplicación estará disponible en: `http://localhost:5173`
+4. La aplicación estará disponible en: `http://localhost:3000`
 
 ### Build para Producción
 ```bash
