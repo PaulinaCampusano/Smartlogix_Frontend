@@ -42,6 +42,20 @@ describe('Navbar', () => {
     expect(enlace).toHaveAttribute('href', '/gestionpedido')
   })
 
+  it('renderiza el enlace Envíos apuntando a /envios', () => {
+    renderNavbar()
+    const enlace = screen.getByRole('link', { name: 'Envíos' })
+    expect(enlace).toBeInTheDocument()
+    expect(enlace).toHaveAttribute('href', '/envios')
+  })
+
+  it('renderiza el enlace Seguimiento apuntando a /seguimiento', () => {
+    renderNavbar()
+    const enlace = screen.getByRole('link', { name: 'Seguimiento' })
+    expect(enlace).toBeInTheDocument()
+    expect(enlace).toHaveAttribute('href', '/seguimiento')
+  })
+
   it('la barra de navegación tiene fondo oscuro', () => {
     renderNavbar()
     const nav = screen.getByRole('navigation')

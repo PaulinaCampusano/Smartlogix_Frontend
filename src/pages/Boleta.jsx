@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { getBoletaCompleta } from '../services/api';
+import { getBoletaCompleta, getEnvioPorPedido } from '../services/api';
+import EnvioInfo from '../components/EnvioInfo';
 
 export default function Boleta() {
     const { id } = useParams(); // Extrae el ID de la URL
     const [boleta, setBoleta] = useState(null);
+    const [envio, setEnvio] = useState(null);
 
     useEffect(() => {
         const cargarBoleta = async () => {
@@ -15,7 +17,17 @@ export default function Boleta() {
                 console.error("Error cargando la boleta", error);
             }
         };
+        const cargarEnvio = async () => {
+            try {
+                const data = await getEnvioPorPedido(id);
+                setEnvio(data);
+            } catch {
+                // El pedido puede no tener despacho (ej. rechazado por falta de stock)
+                setEnvio(null);
+            }
+        };
         cargarBoleta();
+        cargarEnvio();
     }, [id]);
 
     if (!boleta) return <div className="container mt-5 text-center"><h5>Generando boleta...</h5></div>;
@@ -49,6 +61,12 @@ export default function Boleta() {
                         <h4 className="fw-bold">Total Pagado:</h4>
                         <h4 className="fw-bold text-success">${boleta.totalPedido || boleta.total || 0}</h4>
                     </div>
+
+                    {envio && (
+                        <div className="mt-4">
+                            <EnvioInfo envio={envio} />
+                        </div>
+                    )}
                 </div>
                 <div className="card-footer bg-light text-center py-3">
                     <Link to="/" className="btn btn-outline-primary">Volver a la Tienda</Link>

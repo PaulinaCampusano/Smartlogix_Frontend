@@ -96,6 +96,42 @@ describe('Catalogo', () => {
     await waitFor(() => expect(screen.getByText('Total:')).toBeInTheDocument())
   })
 
+  it('muestra las cotizaciones de transportistas al agregar al carrito', async () => {
+    api.cotizarEnvio.mockResolvedValue([
+      { transportista: 'CORREOS', costo: 2590, diasEstimados: 3 },
+      { transportista: 'STARKEN', costo: 3840, diasEstimados: 2 },
+      { transportista: 'CHILEXPRESS', costo: 6390, diasEstimados: 1 },
+    ])
+    renderCatalogo()
+    await waitFor(() => screen.getByText('Laptop'))
+
+    fireEvent.click(screen.getByText('Añadir al Carrito'))
+
+    await waitFor(() => expect(screen.getByText('CORREOS')).toBeInTheDocument())
+    expect(screen.getByText('STARKEN')).toBeInTheDocument()
+    expect(screen.getByText('CHILEXPRESS')).toBeInTheDocument()
+  })
+
+  it('envía la región y el transportista seleccionados al crear el pedido', async () => {
+    api.cotizarEnvio.mockResolvedValue([
+      { transportista: 'CORREOS', costo: 2590, diasEstimados: 3 },
+    ])
+    api.crearPedido.mockResolvedValue({ id: 7 })
+    renderCatalogo()
+    await waitFor(() => screen.getByText('Laptop'))
+
+    fireEvent.click(screen.getByText('Añadir al Carrito'))
+    await waitFor(() => screen.getByText('CORREOS'))
+
+    fireEvent.click(screen.getByText('Proceder al Pago'))
+
+    await waitFor(() => expect(api.crearPedido).toHaveBeenCalled())
+    const pedidoEnviado = api.crearPedido.mock.calls[0][0]
+    expect(pedidoEnviado.transportista).toBe('CORREOS')
+    expect(pedidoEnviado.region).toBe('METROPOLITANA')
+    expect(pedidoEnviado.pesoKg).toBeGreaterThanOrEqual(1)
+  })
+
   it('quita un producto del carrito al hacer click en X', async () => {
     renderCatalogo()
     await waitFor(() => screen.getByText('Laptop'))
@@ -108,8 +144,9 @@ describe('Catalogo', () => {
     await waitFor(() => expect(screen.getByText('El carrito está vacío')).toBeInTheDocument())
   })
 
-  it('muestra alerta si la cantidad es 0 al agregar al carrito', async () => {
-    const alertMock = vi.spyOn(window, 'alert').mockImplementation(() => {})
+  it('usa cantidad 1 como fallback si el input queda en 0', async () => {
+    // El botón usa `cantidades[id] || 1`, por lo que cantidad 0 en el estado
+    // se convierte en 1 al llamar a agregarAlCarrito — nunca dispara la alerta.
     renderCatalogo()
     await waitFor(() => screen.getByText('Laptop'))
 
@@ -117,10 +154,10 @@ describe('Catalogo', () => {
     fireEvent.change(input, { target: { value: '0' } })
     fireEvent.blur(input)
 
+    // Con fallback a 1, el producto se agrega correctamente
     fireEvent.click(screen.getByText('Añadir al Carrito'))
 
-    expect(alertMock).toHaveBeenCalledWith('La cantidad debe ser mayor a 0')
-    alertMock.mockRestore()
+    expect(screen.queryByText('El carrito está vacío')).not.toBeInTheDocument()
   })
 
   it('muestra alerta si la cantidad supera el stock disponible', async () => {

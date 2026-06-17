@@ -51,3 +51,29 @@ export const actualizarPedido = async (id, pedido) => {
 export const eliminarPedido = async (id) => {
     await axios.delete(`${BFF_URL}/pedidos/${id}`);
 };
+
+// --- Funciones de Envíos (pasan por el BFF) ---
+export const getEnvios = async () => {
+    const response = await axios.get(`${BFF_URL}/envios`);
+    return response.data;
+};
+
+export const getEnvioPorPedido = async (idPedido) => {
+    const response = await axios.get(`${BFF_URL}/envios/pedido/${idPedido}`);
+    return response.data;
+};
+
+export const getEnvioPorSeguimiento = async (numeroSeguimiento) => {
+    const response = await axios.get(`${BFF_URL}/envios/seguimiento/${numeroSeguimiento}`);
+    return response.data;
+};
+
+export const cotizarEnvio = async (pesoKg = 1, region = 'METROPOLITANA') => {
+    const response = await axios.get(`${BFF_URL}/envios/cotizar`, { params: { pesoKg, region } });
+    return response.data;
+};
+
+export const actualizarEstadoEnvio = async (idEnvio, estado) => {
+    const response = await axios.put(`${BFF_URL}/envios/${idEnvio}/estado`, null, { params: { estado } });
+    return response.data;
+};
