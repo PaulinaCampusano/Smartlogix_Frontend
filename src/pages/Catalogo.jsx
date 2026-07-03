@@ -1,16 +1,50 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getProductos, crearPedido } from '../services/api';
+import { getProductos, crearPedido, cotizarEnvio } from '../services/api';
+
+const REGIONES = ['METROPOLITANA', 'VALPARAISO', 'BIOBIO', 'OTRA'];
+
+const formatoCLP = (n) =>
+    new Intl.NumberFormat('es-CL', { style: 'currency', currency: 'CLP', maximumFractionDigits: 0 })
+        .format(n || 0);
 
 export default function Catalogo() {
     const [productos, setProductos] = useState([]);
     const [carrito, setCarrito] = useState([]);
     const [cantidades, setCantidades] = useState({});
+    // Despacho: región, cotizaciones de transportistas y opción elegida
+    const [region, setRegion] = useState('METROPOLITANA');
+    const [cotizaciones, setCotizaciones] = useState([]);
+    const [transportistaSel, setTransportistaSel] = useState(null);
     const navigate = useNavigate();
+
+    // Peso simple del paquete: 1 kg por unidad en el carrito (mínimo 1)
+    const pesoTotal = Math.max(1, carrito.reduce((s, item) => s + item.cantidad, 0));
 
     useEffect(() => {
         cargarProductos();
     }, []);
+
+    // Cotiza el envío cada vez que cambia el carrito o la región
+    useEffect(() => {
+        if (carrito.length === 0) {
+            setCotizaciones([]);
+            setTransportistaSel(null);
+            return;
+        }
+        let activo = true;
+        Promise.resolve(cotizarEnvio(pesoTotal, region))
+            .then((data) => {
+                if (!activo) return;
+                const lista = Array.isArray(data) ? data : [];
+                setCotizaciones(lista);
+                // Por defecto, la opción más económica (la primera, ya viene ordenada)
+                setTransportistaSel((prev) =>
+                    lista.some((c) => c.transportista === prev) ? prev : lista[0]?.transportista || null);
+            })
+            .catch((e) => { if (activo) { console.error('Error cotizando envío', e); setCotizaciones([]); } });
+        return () => { activo = false; };
+    }, [carrito, region, pesoTotal]);
 
     const cargarProductos = async () => {
         try {
@@ -57,12 +91,19 @@ export default function Catalogo() {
     };
 
     const totalCarrito = carrito.reduce((total, item) => total + (item.precioUnitario * item.cantidad), 0);
+    const cotizacionSel = cotizaciones.find((c) => c.transportista === transportistaSel);
+    const costoEnvio = cotizacionSel?.costo || 0;
+    const totalFinal = totalCarrito + costoEnvio;
 
     const procesarCompra = async () => {
         if (carrito.length === 0) return;
 
         const nuevoPedido = {
             cliente: "Cliente Web",
+            // Datos de despacho elegidos en el checkout
+            region,
+            transportista: transportistaSel,
+            pesoKg: pesoTotal,
             items: carrito.map(item => ({
                 skuProducto: item.sku,
                 cantidad: item.cantidad
@@ -179,12 +220,67 @@ export default function Catalogo() {
                                             </li>
                                         ))}
                                     </ul>
+
+                                    {/* COTIZADOR DE ENVÍO */}
+                                    <div className="border rounded p-2 mb-3 bg-light">
+                                        <div className="d-flex justify-content-between align-items-center mb-2">
+                                            <strong className="small">🚚 Despacho</strong>
+                                            <select
+                                                className="form-select form-select-sm"
+                                                style={{ width: 'auto' }}
+                                                value={region}
+                                                onChange={(e) => setRegion(e.target.value)}
+                                            >
+                                                {REGIONES.map((r) => (
+                                                    <option key={r} value={r}>{r}</option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        {cotizaciones.length === 0 ? (
+                                            <p className="text-muted small mb-0">Cotizando transportistas…</p>
+                                        ) : (
+                                            cotizaciones.map((c) => (
+                                                <label
+                                                    key={c.transportista}
+                                                    className={`d-flex align-items-center justify-content-between p-2 mb-1 rounded ${transportistaSel === c.transportista ? 'border border-primary bg-white' : ''}`}
+                                                    style={{ cursor: 'pointer' }}
+                                                >
+                                                    <span className="d-flex align-items-center">
+                                                        <input
+                                                            type="radio"
+                                                            className="form-check-input me-2"
+                                                            name="transportista"
+                                                            checked={transportistaSel === c.transportista}
+                                                            onChange={() => setTransportistaSel(c.transportista)}
+                                                        />
+                                                        <span>
+                                                            <strong className="small">{c.transportista}</strong>
+                                                            <span className="text-muted small d-block">{c.diasEstimados} día(s)</span>
+                                                        </span>
+                                                    </span>
+                                                    <span className="fw-bold small">{formatoCLP(c.costo)}</span>
+                                                </label>
+                                            ))
+                                        )}
+                                    </div>
+
                                     <hr />
+                                    <div className="d-flex justify-content-between small text-muted">
+                                        <span>Productos</span>
+                                        <span>{formatoCLP(totalCarrito)}</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between small text-muted mb-2">
+                                        <span>Envío {transportistaSel ? `(${transportistaSel})` : ''}</span>
+                                        <span>{formatoCLP(costoEnvio)}</span>
+                                    </div>
                                     <div className="d-flex justify-content-between mb-3">
                                         <h5 className="fw-bold">Total:</h5>
-                                        <h5 className="fw-bold text-success">${totalCarrito}</h5>
+                                        <h5 className="fw-bold text-success">{formatoCLP(totalFinal)}</h5>
                                     </div>
-                                    <button className="btn btn-success w-100 fw-bold" onClick={procesarCompra}>
+                                    <button
+                                        className="btn btn-success w-100 fw-bold"
+                                        onClick={procesarCompra}
+                                    >
                                         Proceder al Pago
                                     </button>
                                 </>
